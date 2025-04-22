@@ -22,7 +22,7 @@ os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama3-70b-8192")
-embeddings = HuggingFaceEmbeddings(model_name="embeddings_model")
+embeddings = HuggingFaceEmbeddings(model_name="abhinand/MedEmbed-large-v0.1")
 
 def get_embeddings():
     return embeddings
