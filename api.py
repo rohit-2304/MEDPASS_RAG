@@ -316,3 +316,7 @@ async def store_document(
         "message": "File and data uploaded successfully!"
     }
 
+# This should be the last thing
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("api:rag_app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
