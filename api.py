@@ -14,10 +14,9 @@ import tempfile
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema import Document
-from app import process_uploaded_file, process_preprocessed_data,vector_embedding,generate_summary,generate_history,generate_response,get_embeddings
+from app import process_uploaded_file,vector_embedding,generate_summary,generate_history,generate_response,get_embeddings
 from pydantic import BaseModel
 from langchain_community.vectorstores import FAISS
-from final_img_pros import processing
 import requests
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
@@ -175,28 +174,17 @@ async def summary(user: User = None):
             print(file_path)
             pdf = download_pdf(file_path)
 
-            if file_dict["fileType"] == "descriptive":
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-                    temp_file.write(pdf)
-                    temp_file_path = temp_file.name
-                documents = process_uploaded_file(temp_file_path) 
-                os.remove(temp_file_path)
-                all_docs.append(documents)
-                curr_vectors = vector_embedding(documents,flag=False)
-                doc = Document(page_content=file_dict['issuedOn'] + '\n' + generate_summary(curr_vectors),metadata={"page": page})
-                page+=1
-                history.append(doc)
-
-            elif file_dict["fileType"] == "table_format":
-                pdf_data = processing(pdf)
-                documents = process_preprocessed_data(pdf_data)  # make langchain docs out of them
-                all_docs.append(documents)
-
-                # create summary of the current document
-                curr_vectors = vector_embedding(documents,flag=False) 
-                doc = Document(page_content=file_dict['issuedOn'] + '\n' + generate_summary(curr_vectors),metadata={"page": page})
-                page+=1
-                history.append(doc)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                temp_file.write(pdf)
+                temp_file_path = temp_file.name
+            documents = process_uploaded_file(temp_file_path) 
+            os.remove(temp_file_path)
+            all_docs.append(documents)
+            curr_vectors = vector_embedding(documents,flag=False)
+            doc = Document(page_content=file_dict['issuedOn'] + '\n' + generate_summary(curr_vectors),metadata={"page": page})
+            page+=1
+            history.append(doc)
 
             db.collection(username).document(file.id).update({"embedded" : "true"})
         if count == 0:
@@ -316,7 +304,3 @@ async def store_document(
         "message": "File and data uploaded successfully!"
     }
 
-# This should be the last thing
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api:rag_app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
