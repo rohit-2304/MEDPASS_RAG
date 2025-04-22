@@ -1,5 +1,4 @@
 import os
-import time
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -7,12 +6,9 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import FAISS
-from langchain.schema import Document
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_huggingface import HuggingFaceEmbeddings
-
+from langchain_google import GoogleGenerativeAIEmbeddings
 from itertools import chain
-from final_img_pros import processing
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +18,7 @@ os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama3-70b-8192")
-embeddings = HuggingFaceEmbeddings(model_name="abhinand/MedEmbed-large-v0.1")
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
 def get_embeddings():
     return embeddings
@@ -128,31 +124,6 @@ chatbot_prompt = ChatPromptTemplate.from_template(
 )
 
 
-def process_preprocessed_data(preprocessed_data):
-    """Converts extracted table data from dict format to LangChain Document format."""
-    documents = []
-    
-    for page, tables in preprocessed_data.items():
-        page_text = ""
-
-        # Convert table data to formatted text
-        for table in tables.items():
-            for row in table:
-                if isinstance(row, (list, tuple)):
-                    row_text = "\t".join(map(str, row))  # Join row elements with tabs
-                else:
-                    row_text = str(row)  # Handle cases where `row` is an integer or single value
-                page_text += row_text + "\n"
-            page_text += "\n"  # Add spacing between tables
-        
-        # Create a LangChain Document with page metadata
-        doc = Document(page_content=page_text, metadata={"page": page})
-        # print(doc.page_content)
-        # print(doc.metadata)
-        documents.append(doc)
-
-    return documents
-
 def process_uploaded_file(directory_path):
     """Processes a given PDF file and returns extracted documents."""
     loader = PyPDFLoader(directory_path)
@@ -164,7 +135,7 @@ def vector_embedding(documents,flag):
     """Generates vector embeddings from documents."""
     print("Processing documents...")
 
-    #embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
@@ -182,11 +153,9 @@ def generate_summary(vectors):
     retriever = vectors.as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     
-    start = time.process_time()
     response = retrieval_chain.invoke({'input': 'Summarize the document'})
-    elapsed_time = time.process_time() - start
     
-    print(f"Summary generated in {elapsed_time:.2f} seconds!\n")
+    print("Summary generated in seconds!\n")
     # print("=== DOCUMENT SUMMARY ===")
     # print(response['answer'])
     return response['answer']
@@ -197,14 +166,12 @@ def generate_history(vectors,patient_info):
     retriever = vectors.as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     
-    start = time.process_time()
     response = retrieval_chain.invoke({
             'input': 'Generate a comprehensive patient history summary',
             'patient_info': patient_info
         })
-    elapsed_time = time.process_time() - start
     
-    print(f"Summary generated in {elapsed_time:.2f} seconds!\n")
+    print("Summary generated in seconds!\n")
     # print("=== DOCUMENT SUMMARY ===")
     # print(response['answer'])
     return response['answer']
@@ -214,138 +181,15 @@ def generate_response(vectors,patient_info,query):
     retriever = vectors.as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     
-    start = time.process_time()
     response = retrieval_chain.invoke({
             'input': 'Please provide the most accurate response based on the query',
             'patient_info': patient_info,
             'query':query
         })
-    elapsed_time = time.process_time() - start
-    
-    print(f"Response generated in {elapsed_time:.2f} seconds!\n")
     # print("=== DOCUMENT SUMMARY ===")
     # print(response['answer'])
     return response['answer']
 
-
-def main(history_vector_db_path, all_vector_db_path):
-
-    doc_list = {'Vaibhav_Gatne_2022_03_10.pdf':{'date' : '10/3/2022', 'type' : 'Imaging Report'},
-                'Vaibhav_Gatne_2022_03_11_2.pdf':{'date' : '11/3/2022', 'type':'x-ray Report'},
-                'Vaibhav_Gatne_2022_03_12.pdf':{'date' : '12/3/2022', 'type':'MRI Report'},
-                'Vaibhav_Gatne_2022_03_14_2.pdf':{'date': '14/3/2022', 'type':'ERCP report'},
-                'Vaibhav_Gatne_2022_03_14.pdf':{'date':'14/3/2022','type':'Endoscopy Discharge report'},
-                'Vaibhav_Gatne_2022_03_19.pdf':{'date':'19/3/2022','type':'Discharge Summary'},
-                'Vaibhav_Gatne_2022_04_15.pdf':{'date':'15/4/2022','type':'ERCP report'},
-                'Vaibhav_Gatne_2023_07_22.pdf':{'date':'22/7/2023','type':'Sonography Report'},
-                'Vaibhav_Gatne_2022_03_11.pdf':{'date':'11/3/2022','type':'Blood test Report'},
-                'Vaibhav_Gatne_2022_03_17.pdf':{'date':'17/3/2022','type':'Biochemistry Report'},
-                'Vaibhav_Gatne_2022_03_20.pdf':{'date':'20/3/2022','type':'Blood test Report'},
-                'Vaibhav_Gatne_2022_03_21.pdf':{'date':'21/3/2022','type':'Blood test Report'},
-                'Vaibhav_Gatne_2023_07_21.pdf':{'date':'21/7/2023','type':'Blood test Report'},
-                'Vaibhav_Gatne_2024_06_18.pdf':{'date':'11/3/2024','type':'Blood test Report'}
-                }
-    
-    patient_info = """ PATIENT INFORMATION:
-    - Full Name: Vaibhav Gatne
-    - Date of Birth: 23/02/1970
-    - Gender: Male
-    - Contact Information: -
-    - Current Medications: none
-    - Allergies: none
-    - Surgical History: undergone ERCP (Endoscopic Retrograde Cholangiopancreatography) with stent placement in September 2019.The patient underwent a stent removal procedure on April 15, 2022, which involved removing previously placed biliary and PD stents using a snare, and subsequently performing selective CBD (Common Bile Duct) cannulation over a guidewire.
-    - Family Medical History: diabetes
-    - Vital Signs and Physical Characteristics: -
-    - Height: 168cm
-    - Weight: 75kg
-    - Body Mass Index (BMI): -
-    - Blood Group: O+ve
-    
-    - Lifestyle Information:
-    - Dietary Habits: Vegetarian
-    - Physical Activity: 2-4km walking and yoga
-    - Sleep Patterns: 6 hours
-    - Stress Management: -
-    - Substance Use: none
-    - Social Connections: married and has a family
-    - Additional Health Information:
-    - Immunization History: all basic vaccinces required in India and covid vaccine
-    - Reproductive History: none
-    - Psychological History: none
-    - Occupational and Environmental Exposures: director at a software company
-    """
-    
-    print("Loading document...")
-
-    history = ""
-    directory_path = "VG_med_history"
-
-    desc = os.path.join(directory_path, 'descriptive_format')
-    table = os.path.join(directory_path, 'table_format')
-
-    all_docs = []   # for the chatbot
-    history = []    # for generating history; collection of all the summaries
-    page = 1
-   
-
-    try:
-        history_vectors = FAISS.load_local(
-            folder_path = history_vector_db_path,
-            embeddings = embeddings,
-            allow_dangerous_deserialization=True
-        )
-
-        all_doc_vectors = FAISS.load_local(
-            folder_path = all_vector_db_path,
-            embeddings = embeddings,
-            allow_dangerous_deserialization=True
-        )
-    except:
-        for file in os.listdir(table):
-            # processing of all the table format files
-            pdf = os.path.join(table, file)
-            pdf_data = processing(pdf)
-            documents = process_preprocessed_data(pdf_data)  # make langchain docs out of them
-            all_docs.append(documents)
-            curr_vectors = vector_embedding(documents,flag=False) 
-            
-            doc = Document(page_content=str(doc_list[file]) + '\n' + generate_summary(curr_vectors),metadata={"page": page})
-            page+=1
-            history.append(doc)
-
-        for file in os.listdir(desc):
-            documents = process_uploaded_file(os.path.join(desc, file)) 
-            all_docs.append(documents)
-
-            #------------------------------uncomment this all-------------------------------------
-            curr_vectors = vector_embedding(documents,flag=False)
-            doc = Document(page_content=str(doc_list[file]) + '\n' + generate_summary(curr_vectors),metadata={"page": page})
-            page+=1
-            history.append(doc)
-    
-   
-        history_vectors = vector_embedding(history,flag=False)
-        all_doc_vectors = vector_embedding(all_docs,flag = True)
-
-        history_vectors.save_local(folder_path = history_vector_db_path)
-        all_doc_vectors.save_local(folder_path = all_vector_db_path)
-    
-    print("\n\n\n-----------------Final summary----------------\n\n\n")
-    print(generate_history(history_vectors,patient_info))
-    #------------------------------------------------------------------------------------------
-
-    print("Chat with your documents!")
-    chat  = True
-    while(chat):
-        question = input("Your Question : ")
-        print(generate_response(all_doc_vectors,patient_info,question))
-
-        chat = False if input("do you have anymore questions? (y/n)") == 'n' else True
-
-    
-if __name__ == "__main__":
-   # main(os.path.join("vector_dbs","history_vectors"),os.path.join("vector_dbs","all_vectors") )
-   pass
 
 
 

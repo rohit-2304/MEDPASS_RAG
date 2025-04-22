@@ -1,46 +1,16 @@
-# FastAPI and ASGI server
 fastapi
-uvicorn[standard]
-
-# CORS for FastAPI
-python-multipart
-aiofiles
-requests
-
-# LangChain and its integrations
-langchain
-langchain-core
-langchain-community
-langchain-groq
-langchain-huggingface
-huggingface-hub
-
-# Vector store (FAISS)
-faiss-cpu
-
-# Firebase Admin SDK
-firebase-admin
-
-# Pydantic for data models
-pydantic
-
-# PDF & document processing
-PyMuPDF
-pdf2image
-img2table
-pytesseract
-ghostscript
-Pillow
-opencv-python
-
-# OCR
-poppler-utils  # Not installable via pip; install manually on system
-
-# Compression utilities
-PyPDF2
-
-# Environment variable support
+uvicorn
 python-dotenv
-
-# Utility
-tqdm
+langchain
+langchain-groq
+langchain-google
+langchain-community
+google-generativeai
+pydantic
+firebase-admin
+requests
+PyPDF2
+ghostscript
+faiss-cpu
+python-multipart
+shutilwhich  # For compatibility, but shutil is part of stdlib, so this line can be omitted if unnecessary
