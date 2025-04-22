@@ -29,4 +29,5 @@ ENV PORT=8000
 EXPOSE $PORT
 
 # Start the FastAPI app
-CMD ["uvicorn", "api:rag_app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD ["sh", "-c", "uvicorn api:rag_app --host 0.0.0.0 --port=${PORT}"]
+
