@@ -1,27 +1,32 @@
-# Use an official Python base image
+# Use a slim Python base
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
     poppler-utils \
     ghostscript \
     tesseract-ocr \
     libtesseract-dev \
-    && apt-get clean
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create working directory
+# Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY . /app
+# Copy all files
+COPY . .
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Set the default command
-CMD ["uvicorn", "api:rag_app", "--host", "0.0.0.0", "--port", "10000"]
+# Expose the port Render uses
+ENV PORT=8000
+EXPOSE $PORT
+
+# Start the FastAPI app
+CMD ["uvicorn", "api:rag_app", "--host", "0.0.0.0", "--port", "8000"]
