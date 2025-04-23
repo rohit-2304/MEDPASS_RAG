@@ -9,6 +9,7 @@ google-generativeai
 pydantic
 firebase-admin
 requests
+pypdf
 PyPDF2
 ghostscript
 faiss-cpu
